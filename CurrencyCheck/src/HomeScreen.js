@@ -1,11 +1,46 @@
 import {Text, View, StyleSheet, Pressable } from 'react-native';
 import { ScrollView, TextInput } from 'react-native';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 
 export default function HomeScreen() {
+    const [currentDate, setCurrentDate] = useState('');
     const [list, setList] = useState([]);
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const getTodayDateString = () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const date = today.getDate();
+
+        return `${year}년 ${month}월 ${date}일`;
+    };
+
+    const getData = async (dataKey) => {
+        try {
+            const jsonValue = await AsyncStorage.getItem(dataKey);
+            if (jsonValue != null) {
+                setList(JSON.parse(jsonValue));
+            }
+        } catch (e) {
+            console.log('데이터 로드 부분 에러 발생', e);
+        } finally {
+            setIsLoaded(true);
+        }
+    };
+
+    const storeData = async (newList) => {
+        if (!currentDate) return;
+        try {
+            const jsonValue = JSON.stringify(newList);
+            await AsyncStorage.setItem(currentDate, jsonValue);
+        } catch (e) {
+            console.log('데이터 저장 부분 에러 발생', e);
+        }
+    };
     
     const updateItem = (id, field, text) => {
         setList(prevList =>
@@ -21,10 +56,21 @@ export default function HomeScreen() {
         };
         setList([...list, newItem]);
     };
+
+    useEffect(() => {
+        const todayStr = getTodayDateString();
+        setCurrentDate(todayStr);
+        getData(todayStr);
+    }, []);
+    useEffect(() => {
+        if (isLoaded) {
+            storeData(list);
+        }
+    }, [list, isLoaded]);
     return (
         <View style={styles.container}>
             <View style={styles.titleView}>
-                <Text style={styles.title}>2026년 10월 9일</Text>
+                <Text style={styles.title}>{currentDate}</Text>
             </View>
             <ScrollView>
                 {list.map((item) => (
