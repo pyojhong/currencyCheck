@@ -1,8 +1,10 @@
-import {Text, View, StyleSheet, Pressable } from 'react-native';
+import {Text, View, StyleSheet, Pressable, Modal, Button } from 'react-native';
 import { ScrollView, TextInput } from 'react-native';
 import {useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Calendar } from 'react-native-calendars';
+
 
 export default function HomeScreen() {
     const API = 'https://api.frankfurter.app/latest?from=JPY&to=KRW';
@@ -11,6 +13,7 @@ export default function HomeScreen() {
     const [list, setList] = useState([]);
     const [isLoaded, setIsLoaded] = useState(false);
     const [rates, setRates] = useState(0);
+    const [showModal, setShowModal] = useState(false);
 
     const getTodayDateString = () => {
         const today = new Date();
@@ -99,6 +102,7 @@ export default function HomeScreen() {
         }
     }, [list, isLoaded]);
 
+
     return (
         <View style={styles.container}>
             <View style={styles.titleView}>
@@ -151,7 +155,7 @@ export default function HomeScreen() {
                 })}
             </ScrollView>
             <View style={styles.bottomButton}>
-                <Pressable style={({pressed}) => pressed ? ([styles.buttonView, styles.pressedOpacity]) : (styles.buttonView)}>
+                <Pressable onPress={() => setShowModal(true)} style={({pressed}) => pressed ? ([styles.buttonView, styles.pressedOpacity]) : (styles.buttonView)}>
                     <FontAwesome name="calendar" size={styles.navIconStyle.size} color={styles.navIconStyle.color} />
                 </Pressable>
                 <Pressable style={({pressed}) => pressed ? ([styles.buttonView, styles.pressedOpacity]) : (styles.buttonView)}>
@@ -161,6 +165,41 @@ export default function HomeScreen() {
                     <FontAwesome name="plus-square-o" size={styles.navIconStyle.size} color={styles.navIconStyle.color} />
                 </Pressable>
             </View>
+            <Modal visible={showModal} animationType='slide' transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContentContainer}>
+                        <View style={styles.titleView}>
+                            <Text style={styles.title}>캘린더</Text>
+                        </View>
+                        <View style={styles.calendarWrapper}>
+                            <Calendar onDayPress={(day) => {
+                                const [year, month, date] = day.dateString.split('-');
+                                const selectedStr = `${year}년 ${Number(month)}월 ${Number(date)}일`;
+                                setCurrentDate(selectedStr);
+                                getData(selectedStr);
+                                setShowModal(false);
+                            }}
+                            theme={{
+                                backgroundColor: '#111827',
+                                calendarBackground: '#111827',
+                                textSectionTitleColor: '#94a3b8',
+                                dayTextColor: '#ffffff',
+                                todayTextColor: '#fb923c',
+                                selectedDayBackgroundColor: '#f97316',
+                                selectedDayTextColor: '#ffffff',
+                                monthTextColor: '#ffffff',
+                                arrowColor: '#fb923c',
+                            }}>
+                            </Calendar>
+                        </View>
+                        <View style={{marginTop: 15}}>
+                            <Pressable onPress={() => setShowModal(false)} style={({pressed}) => pressed ? ([styles.modalBackButton, styles.pressedOpacity, {width: '100%', marginHorizontal: 0, height: 50}]) : ([styles.modalBackButton, {width: '100%', marginHorizontal: 0, height: 50,}])}>
+                                <Text style={styles.button}>뒤로가기</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -257,7 +296,7 @@ const styles = StyleSheet.create({
         textShadowRadius: 2,
     },
     placeholderStyle: {
-        color: '#ffffff', // 가이드라인 글씨 흰색 제어
+        color: '#ffffff',
     },
     listTextMoney: {
         fontWeight: '700',
@@ -335,6 +374,41 @@ const styles = StyleSheet.create({
     },
     navIconStyle: {
         size: 22,
-        color: '#ffffff', // 하단 아이콘 색상 스타일 객체에서 흰색으로 통일 제어
+        color: '#ffffff',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    modalContentContainer: {
+        width: '95%',
+        backgroundColor: '#0b0f19',
+        borderRadius: 24,
+        padding: 24,
+        paddingVertical: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(249, 115, 22, 0.4)',
+        maxHeight: '90%',
+        justifyContent: 'space-between',
+    },
+    calendarWrapper: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: '#1f2937',
+        marginBottom: 10,
+    },
+    modalBackButton: {
+        width: '100%',
+        height: 52,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#161e2e',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(249, 115, 22, 0.35)',
     },
 });
