@@ -1,4 +1,4 @@
-import {Text, View, StyleSheet, Pressable, Modal, Button } from 'react-native';
+import {Text, View, StyleSheet, Pressable, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { ScrollView, TextInput } from 'react-native';
 import {useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -132,7 +132,7 @@ export default function HomeScreen() {
     const totalKrw = (totalYen * rates).toFixed(2);
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
             <View style={styles.titleView}>
                 <Text style={styles.title}>{currentDate}</Text>
             </View>
@@ -233,7 +233,7 @@ export default function HomeScreen() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
