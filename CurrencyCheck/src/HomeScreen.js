@@ -14,6 +14,7 @@ export default function HomeScreen() {
     const [isLoaded, setIsLoaded] = useState(false);
     const [rates, setRates] = useState(0);
     const [showModal, setShowModal] = useState(false);
+    const [markedDates, setMarkedDates] = useState([]);
 
     const getTodayDateString = () => {
         const today = new Date();
@@ -68,16 +69,6 @@ export default function HomeScreen() {
         storeData(updatedList);
     };
 
-    const checkCurrency = async (itemValue) => {
-        try {
-            const krw = Number(itemValue) * rates;
-            return krw;
-        } catch (e) {
-            console.log('환율 부분 에러 발생', e);
-            return 0;
-        }
-    };
-
     const loadCurrency = async () => {
         try {
             const response = await fetch(API);
@@ -90,11 +81,45 @@ export default function HomeScreen() {
         }
     };
 
+    const loadMarkedDates = async () => {
+        try {
+            const keys = await AsyncStorage.getAllKeys();
+            if (!keys) return;
+
+            let newMarkedDates = {};
+
+            for (let key of keys) {
+                const jsonValue = await AsyncStorage.getItem(key);
+                if (jsonValue != null) {
+                    const parsedList = JSON.parse(jsonValue);
+                    if (parsedList.length > 0) {
+                        const match = key.match(/(\d+)년\s*(\d+)월\s*(\d+)일/);
+                        if (match) {
+                            const [, year, month, date] = match;
+                            const formattedMonth = month.padStart(2, '0');
+                            const formattedDate = date.padStart(2, '0');
+                            const dateString = `${year}-${formattedMonth}-${formattedDate}`;
+
+                            newMarkedDates[dateString] = {
+                                marked: true,
+                                dotColor: '#fb923c',
+                            }
+                        }
+                    }
+                }
+            }
+            setMarkedDates(newMarkedDates);
+        } catch (e) {
+            console.log('마크 로딩 에러', e);
+        }
+    };
+
     useEffect(() => {
         const todayStr = getTodayDateString();
         setCurrentDate(todayStr);
         getData(todayStr);
         loadCurrency();
+        loadMarkedDates();
     }, []);
     useEffect(() => {
         if (isLoaded) {
@@ -103,6 +128,9 @@ export default function HomeScreen() {
     }, [list, isLoaded]);
 
 
+    const totalYen = list.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+    const totalKrw = (totalYen * rates).toFixed(2);
+
     return (
         <View style={styles.container}>
             <View style={styles.titleView}>
@@ -110,6 +138,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.currencyView}>
                 <Text style={styles.changeMoney}>환율: {rates.toFixed(2)}원</Text>
+                <Text style={styles.changeMoney}>전체: {totalYen}엔 / {totalKrw}원</Text>
             </View>
             <ScrollView>
                 {list.map((item) => {
@@ -172,9 +201,13 @@ export default function HomeScreen() {
                             <Text style={styles.title}>캘린더</Text>
                         </View>
                         <View style={styles.calendarWrapper}>
-                            <Calendar onDayPress={(day) => {
+                            <Calendar markedDates={markedDates} onDayPress={(day) => {
                                 const [year, month, date] = day.dateString.split('-');
                                 const selectedStr = `${year}년 ${Number(month)}월 ${Number(date)}일`;
+
+                                setIsLoaded(false);
+                                setList([]);
+
                                 setCurrentDate(selectedStr);
                                 getData(selectedStr);
                                 setShowModal(false);
@@ -243,7 +276,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         marginHorizontal: 20,
         marginBottom: 15,
-        justifyContent: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-around',
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#1f2937',
